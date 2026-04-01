@@ -1,0 +1,5 @@
+{
+  "name": "ClassSeat - Quản lý Chỗ ngồi Lớp học",
+  "description": "Ứng dụng sắp xếp và quản lý chỗ ngồi học sinh hiện đại với tính năng kéo thả và xáo trộn chỗ ngồi.",
+  "requestFramePermissions": []
+}
