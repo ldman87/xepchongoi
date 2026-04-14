@@ -95,6 +95,11 @@ export default function TeacherView({ students, seats, settings, currentUser }: 
   };
 
   const handleSeatClick = async (seatId: string) => {
+    if (settings?.mode !== 'teacher-manual') {
+      toast.error("Bạn chỉ có thể xếp chỗ thủ công khi ở chế độ 'GV xếp thủ công'");
+      return;
+    }
+
     if (!selectedStudentId) {
       const seat = seats.find(s => s.id === seatId);
       if (seat?.studentId) {
@@ -161,21 +166,32 @@ export default function TeacherView({ students, seats, settings, currentUser }: 
       await new Promise(resolve => setTimeout(resolve, 500));
       
       const canvas = await html2canvas(mapRef.current, {
-        scale: 2,
+        scale: 3, // Increase scale for better quality
         backgroundColor: "#ffffff",
-        logging: true,
+        logging: false,
         useCORS: true,
         allowTaint: true,
-        width: 1000, // Force a fixed width for capture to prevent cutoff on mobile
+        width: 1200, // Fixed width for consistent export
         onclone: (clonedDoc) => {
           const el = clonedDoc.getElementById('seating-map-container');
           if (el) {
-            el.style.width = '1000px';
+            el.style.width = '1200px';
             el.style.display = 'block';
             el.style.overflow = 'visible';
-            // Find the inner div with min-w-[800px] and ensure it's not constrained
+            el.style.padding = '40px';
             const inner = el.querySelector('div');
-            if (inner) inner.style.minWidth = '1000px';
+            if (inner) {
+              inner.style.minWidth = '1100px';
+              inner.style.transform = 'scale(1)';
+            }
+            // Ensure all text is visible and not truncated
+            const names = clonedDoc.querySelectorAll('.student-name');
+            names.forEach((n: any) => {
+              n.style.fontSize = '12px';
+              n.style.whiteSpace = 'normal';
+              n.style.overflow = 'visible';
+              n.style.display = 'block';
+            });
           }
         }
       });
@@ -208,18 +224,29 @@ export default function TeacherView({ students, seats, settings, currentUser }: 
       await new Promise(resolve => setTimeout(resolve, 500));
 
       const canvas = await html2canvas(mapRef.current, { 
-        scale: 2,
+        scale: 3,
         useCORS: true,
-        logging: true,
-        width: 1000,
+        logging: false,
+        width: 1200,
         onclone: (clonedDoc) => {
           const el = clonedDoc.getElementById('seating-map-container');
           if (el) {
-            el.style.width = '1000px';
+            el.style.width = '1200px';
             el.style.display = 'block';
             el.style.overflow = 'visible';
+            el.style.padding = '40px';
             const inner = el.querySelector('div');
-            if (inner) inner.style.minWidth = '1000px';
+            if (inner) {
+              inner.style.minWidth = '1100px';
+              inner.style.transform = 'scale(1)';
+            }
+            const names = clonedDoc.querySelectorAll('.student-name');
+            names.forEach((n: any) => {
+              n.style.fontSize = '12px';
+              n.style.whiteSpace = 'normal';
+              n.style.overflow = 'visible';
+              n.style.display = 'block';
+            });
           }
         }
       });

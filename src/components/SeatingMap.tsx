@@ -61,6 +61,7 @@ export default function SeatingMap({
                         isHighlighted={highlightedSeatId === seat1Id}
                         onClick={() => !readOnly && onSeatClick?.(seat1Id)}
                         readOnly={readOnly}
+                        allStudents={students}
                       />
                     )}
                     {seat2Id && (
@@ -70,6 +71,7 @@ export default function SeatingMap({
                         isHighlighted={highlightedSeatId === seat2Id}
                         onClick={() => !readOnly && onSeatClick?.(seat2Id)}
                         readOnly={readOnly}
+                        allStudents={students}
                       />
                     )}
                     {!seat1Id && !seat2Id && <div className="w-32 h-20" />}
@@ -92,7 +94,25 @@ interface SeatItemProps {
   readOnly: boolean;
 }
 
-function SeatItem({ id, student, isHighlighted, onClick, readOnly }: SeatItemProps) {
+function SeatItem({ id, student, isHighlighted, onClick, readOnly, allStudents }: SeatItemProps & { allStudents: Student[] }) {
+  const getDisplayName = (name: string) => {
+    const parts = name.trim().split(' ');
+    const firstName = parts.pop() || '';
+    
+    // Check if there are other students with the same first name
+    const duplicates = allStudents.filter(s => {
+      const sParts = s.name.trim().split(' ');
+      return sParts.pop() === firstName;
+    });
+
+    if (duplicates.length > 1 && parts.length > 0) {
+      // If duplicates exist, show the last part of the middle name + first name
+      const middleName = parts.pop() || '';
+      return `${middleName} ${firstName}`;
+    }
+    return firstName;
+  };
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -114,8 +134,8 @@ function SeatItem({ id, student, isHighlighted, onClick, readOnly }: SeatItemPro
             {student ? (
               <>
                 <User className="w-6 h-6 mb-1 text-teal-600" />
-                <span className="text-[10px] font-bold text-center leading-tight uppercase line-clamp-2">
-                  {student.name.split(' ').pop()}
+                <span className="student-name text-[10px] font-bold text-center leading-tight uppercase line-clamp-2 break-words w-full px-0.5">
+                  {getDisplayName(student.name)}
                 </span>
                 {student.isNearsighted && (
                   <div className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" title="Cận thị" />

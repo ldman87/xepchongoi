@@ -38,68 +38,84 @@ export default function App() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [isCustomAuth, setIsCustomAuth] = useState(false);
-  const isCustomAuthRef = React.useRef(false);
+  const [isCustomAuth, setIsCustomAuth] = useState(() => {
+    return localStorage.getItem('isCustomAuth') === 'true';
+  });
+  const isCustomAuthRef = React.useRef(isCustomAuth);
+
+  useEffect(() => {
+    localStorage.setItem('isCustomAuth', isCustomAuth.toString());
+    isCustomAuthRef.current = isCustomAuth;
+  }, [isCustomAuth]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (isCustomAuthRef.current) return; // Skip if we are using custom auth
+      console.log("Auth state changed:", user?.email, "CustomAuth:", isCustomAuthRef.current);
+      
+      if (isCustomAuthRef.current && !user) {
+        // If we are in custom auth mode and there's no firebase user, 
+        // we don't want to clear the local user state yet.
+        setLoading(false);
+        return;
+      }
       
       setUser(user);
       if (user) {
+        setIsCustomAuth(false); // If a real Firebase user logs in, disable custom auth
         // 1. Check if student profile exists by UID
-        const studentDoc = await getDoc(doc(db, 'students', user.uid));
-        if (studentDoc.exists()) {
-          setStudentProfile({ id: studentDoc.id, ...studentDoc.data() } as Student);
-        } else {
-          // 2. Check if a student with this email already exists (from initialization)
-          const q = await getDocs(collection(db, 'students'));
-          const existingStudentDoc = q.docs.find(d => d.data().email?.toLowerCase() === user.email?.toLowerCase());
-          
-          if (existingStudentDoc) {
-            // Migrate existing student to use user.uid
-            const data = existingStudentDoc.data() as Student;
-            const newStudent: Student = {
-              ...data,
-              id: user.uid,
-              role: data.role || 'student'
-            };
-            
-            const batch = writeBatch(db);
-            batch.set(doc(db, 'students', user.uid), newStudent);
-            
-            // If they already have a seat, update the seat document to point to the new UID
-            if (data.seatId) {
-              batch.update(doc(db, 'seats', data.seatId), { studentId: user.uid });
-            }
-            
-            // Only delete if it's one of the auto-generated IDs
-            if (existingStudentDoc.id.startsWith('student_')) {
-              batch.delete(doc(db, 'students', existingStudentDoc.id));
-            }
-            await batch.commit();
-            setStudentProfile(newStudent);
-          } else if (user.email === TEACHER_EMAIL || user.email === 'ledinhmannct2026@gmail.com' || user.email === 'ldman87@gmail.com') {
-            // Admin role
-            const adminProfile: Student = {
-              id: user.uid,
-              stt: 0,
-              name: "Giáo viên",
-              dob: "",
-              gender: "Nam",
-              group: "Admin",
-              address: "",
-              email: user.email!,
-              seatId: null,
-              isNearsighted: false,
-              role: 'admin'
-            };
-            await setDoc(doc(db, 'students', user.uid), adminProfile);
-            setStudentProfile(adminProfile);
+        try {
+          const studentDoc = await getDoc(doc(db, 'students', user.uid));
+          if (studentDoc.exists()) {
+            setStudentProfile({ id: studentDoc.id, ...studentDoc.data() } as Student);
           } else {
-            toast.error("Email không có trong danh sách lớp.");
-            await signOut(auth);
+            // 2. Check if a student with this email already exists (from initialization)
+            const q = await getDocs(collection(db, 'students'));
+            const existingStudentDoc = q.docs.find(d => d.data().email?.toLowerCase() === user.email?.toLowerCase());
+            
+            if (existingStudentDoc) {
+              console.log("Migrating student profile for:", user.email);
+              const data = existingStudentDoc.data() as Student;
+              const newStudent: Student = {
+                ...data,
+                id: user.uid,
+                role: data.role || 'student'
+              };
+              
+              const batch = writeBatch(db);
+              batch.set(doc(db, 'students', user.uid), newStudent);
+              
+              if (data.seatId) {
+                batch.update(doc(db, 'seats', data.seatId), { studentId: user.uid });
+              }
+              
+              if (existingStudentDoc.id.startsWith('student_')) {
+                batch.delete(doc(db, 'students', existingStudentDoc.id));
+              }
+              await batch.commit();
+              setStudentProfile(newStudent);
+            } else if (user.email === TEACHER_EMAIL || user.email === 'ledinhmannct2026@gmail.com' || user.email === 'ldman87@gmail.com') {
+              const adminProfile: Student = {
+                id: user.uid,
+                stt: 0,
+                name: "Giáo viên",
+                dob: "",
+                gender: "Nam",
+                group: "Admin",
+                address: "",
+                email: user.email!,
+                seatId: null,
+                isNearsighted: false,
+                role: 'admin'
+              };
+              await setDoc(doc(db, 'students', user.uid), adminProfile);
+              setStudentProfile(adminProfile);
+            } else {
+              toast.error("Email không có trong danh sách lớp.");
+              await signOut(auth);
+            }
           }
+        } catch (err) {
+          console.error("Error fetching profile:", err);
         }
       } else {
         setStudentProfile(null);
