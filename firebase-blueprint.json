@@ -1,0 +1,53 @@
+{
+  "entities": {
+    "Student": {
+      "title": "Student",
+      "description": "A student in the class",
+      "type": "object",
+      "properties": {
+        "stt": { "type": "number" },
+        "name": { "type": "string" },
+        "dob": { "type": "string" },
+        "gender": { "type": "string" },
+        "group": { "type": "string" },
+        "address": { "type": "string" },
+        "email": { "type": "string" },
+        "seatId": { "type": "string" },
+        "isNearsighted": { "type": "boolean" },
+        "role": { "type": "string", "enum": ["student", "admin"] }
+      },
+      "required": ["stt", "name", "email", "role"]
+    },
+    "Seat": {
+      "title": "Seat",
+      "description": "A seat in the classroom",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" }
+      }
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global application settings",
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["student-random", "teacher-manual", "teacher-random"] },
+        "lastReset": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/students/{studentId}": {
+      "schema": "Student",
+      "description": "Collection of students"
+    },
+    "/seats/{seatId}": {
+      "schema": "Seat",
+      "description": "Collection of seats (1-34)"
+    },
+    "/settings/{settingId}": {
+      "schema": "Settings",
+      "description": "Global settings"
+    }
+  }
+}

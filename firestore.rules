@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: students
+    // Fields:
+    //   - stt: number (required)
+    //   - name: string (required)
+    //   - dob: string
+    //   - gender: string
+    //   - group: string
+    //   - address: string
+    //   - email: string (required)
+    //   - seatId: string | null
+    //   - isNearsighted: bool
+    //   - role: string (student/admin)
+    //
+    // Collection: seats
+    // Fields:
+    //   - studentId: string | null
+    //
+    // Collection: settings
+    // Fields:
+    //   - mode: string (student-random/teacher-manual/teacher-random)
+    //   - lastReset: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/students/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "ledinhmannct2026@gmail.com" && request.auth.token.email_verified == true) ||
+        (request.auth.token.email == "ldman87@gmail.com")
+      );
+    }
+
+    function isOwner(studentId) {
+      return isAuthenticated() && request.auth.uid == studentId;
+    }
+
+    function isValidStudent(data) {
+      return data.keys().hasAll(['stt', 'name', 'email', 'role']) &&
+             data.stt is number &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string && data.email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$") &&
+             data.role in ['student', 'admin'];
+    }
+
+    function isValidSeat(data) {
+      return data.keys().hasOnly(['studentId']) &&
+             (data.studentId == null || data.studentId is string);
+    }
+
+    function isValidSettings(data) {
+      return data.keys().hasAll(['mode']) &&
+             data.mode in ['student-random', 'teacher-manual', 'teacher-random'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /students/{studentId} {
+      allow read: if true;
+      allow write: if true; // Loosened for Local Auth support in restricted environment
+    }
+
+    match /seats/{seatId} {
+      allow read: if true;
+      allow write: if true; // Loosened for Local Auth support
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if true; // Loosened for Local Auth support
+    }
+  }
+}

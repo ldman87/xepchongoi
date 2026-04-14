@@ -1,26 +1,45 @@
-
 export interface Student {
   id: string;
+  stt: number;
   name: string;
-  birthday: string;
-  gender: 'Nam' | 'Nữ';
-  group: number; // Tổ 1, 2, 3, 4
+  dob: string;
+  gender: string;
+  group: string;
   address: string;
   email: string;
-  password: string;
-  isNearsighted?: boolean;
+  password?: string;
+  seatId: string | null;
+  isNearsighted: boolean;
+  role: 'student' | 'admin';
 }
 
 export interface Seat {
-  id: number;
-  studentId: string | null; // ID of student assigned to this seat
-  row: number;
-  column: number;
+  id: string; // "1" to "34"
+  studentId: string | null;
 }
 
-export type UserRole = 'teacher' | 'student';
+export interface AppSettings {
+  mode: 'student-random' | 'teacher-manual' | 'teacher-random';
+  lastReset: any;
+}
 
-export interface AuthState {
-  user: Student | { email: string; role: 'teacher' } | null;
-  role: UserRole | null;
+export type OperationType = 'create' | 'update' | 'delete' | 'list' | 'get' | 'write';
+
+export interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  };
 }
